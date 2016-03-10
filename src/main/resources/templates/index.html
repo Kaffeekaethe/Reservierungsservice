@@ -1,0 +1,115 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head lang="en">
+
+	<title>Spring Framework Guru</title>
+	<meta charset="utf-8"/>
+	<link rel="stylesheet" type="text/css" media="all" 
+	href="../../css/style.css" th:href="@{../../css/style.css}" />
+</head>
+<body>
+	<h2>Reservierung</h2>
+	
+	<div>
+	<label> Start: </label>
+		<select id="start" name="start">
+			<option th:each="h : ${haltestellen}" th:value="${h}" th:text="${h}"></option>
+		</select>
+		<label> Ziel: </label>
+		<select id="ziel" name="ziel">
+			<option th:each="h : ${haltestellen}" th:value="${h}" th:text="${h}"></option>
+		</select>
+	</div>
+	<div>
+		<button onclick="javascript:lade_zuege();">Zuege anzeigen</button>
+	<select class="wider" id="zug" name="zug">
+		<option th:each="zug : ${zuege}" th:value="${zug}" th:text="${zug}"></option>
+	</select>
+	</div>
+	<div>
+		<button onclick="javascript:lade_plaetze();">Plaetze anzeigen</button>
+		<select class="wider" id="platz" name="platz">
+			<option th:each="platz : ${plaetze}" th:value="${platz}" th:text="${platz}"></option>
+		</select>
+	</div>
+	<div>
+		<button onclick="javascript:buche_platz();">Buche Platz</button>
+		<label id="buchungs_ergebnis"></label>
+	</div>
+
+</body>
+</html>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+<script th:inline="javascript">
+	//<![CDATA[
+	function lade_zuege(){
+		
+		var start_source = document.getElementById("start");	  
+		var ziel_source = document.getElementById("ziel");
+		var strecke = {};
+		strecke["start"] = start_source.options[start_source.selectedIndex].value;
+		strecke["ziel"] = ziel_source.options[ziel_source.selectedIndex].value;
+		$.get("/zuege", strecke, function(data){
+			response = JSON.parse(data);
+			console.log(response);
+			zug_select = $("#zug");
+			zug_select.html("");
+			var str = "";
+			if(response.length == 0){
+				str = "<option>Keine Zuege vorhanden</option>"
+			}
+			for (var i = 0; i < response.length; i++) {
+				var obj = JSON.parse(response[i]);
+				console.log(obj);
+				str = str + "<option value='" + obj["Zug"] + "'>" + obj["Zug"] + "</option>";
+			};
+			zug_select.html(str);
+		});
+
+	}
+	
+	function lade_plaetze(){
+		var source = document.getElementById("zug");
+		var zug = {};
+		zug["zug"] = source.options[source.selectedIndex].value;
+		$.get('/plaetze/', zug , function(data){
+			response = JSON.parse(data);
+			console.log(response);
+			platz_select = $("#platz");
+			platz_select.html("");
+			var str = "";
+			
+			if(response.length == 0){
+				str = "<option>Keine Plaetze vorhanden</option>"
+			}
+			for (var i = 0; i < response.length; i++) {
+				var obj = JSON.parse(response[i]);
+				
+				str = str + "<option value='" + obj["platzID"] + "'>" + obj["platzID"] + " (" + obj["klasse"] +  ". Klasse) "
+				
+				if(obj["raucher"] == true){
+					str = str + " - Raucherplatz" 
+				}
+				
+				if(obj["fenster"] == true){
+					str = str + " - Fensterplatz" 
+				} 
+				str = str + "</option>";
+			};
+			platz_select.html(str);
+		});
+	}
+	
+	function buche_platz(){
+		var zug = document.getElementById("zug");
+		var platz = document.getElementById("platz");
+		var buchung = {};
+		buchung["zug"] = zug.options[zug.selectedIndex].value;
+		buchung["platz"] = platz.options[platz.selectedIndex].value;
+		$.get('/buche/', buchung, function(data){
+			$("#buchungs_ergebnis").html(data);
+			lade_zuege();
+			lade_plaetze();
+		});
+	}
+		//]]>
+		</script>
